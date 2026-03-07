@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from "express";
 import { pipeline,ActionType } from "./types";
-import { createPipeline ,getPipelineByPath } from "./db/pipelines";
+import { createPipeline ,getPipelineByPath , createJob} from "./db/pipelines";
 const app = express(); 
 const PORT = 3000;
 app.use(express.json());
@@ -33,9 +33,23 @@ async function handlerPipelines(req: Request , resp: Response){
 async function handlerWebhook(req: Request, res: Response) {
     const path = req.params.path as string;
     const data = req.body;
-    const pipelineRow = getPipelineByPath(path);
+    const pipelineRow = await getPipelineByPath(path);
     if(!pipelineRow){return res.status(404).json({err : "pipelineRow not found"});}
      //process
+     console.log("Webhook received for pipeline:", pipelineRow, "with payload:", data);
+    const newJob = {
+    id: Date.now().toString(),
+    pipelineId: pipelineRow.id,
+    payload: data,
+    status: "pending",
+    attempts: 0,
+    createdAt: new Date(),
+  };
+  const savedJob = await createJob(newJob);
+  if(!savedJob){return res.status(404).json({err : "savedjob not found"});}
+  console.log("Job queued:", savedJob);
+  return res.status(202).json({ message: "Webhook accepted",  jobId: savedJob.id,});
+
   }
 
 
