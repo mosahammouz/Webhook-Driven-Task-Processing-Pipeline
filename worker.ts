@@ -1,6 +1,6 @@
 
 import { getPendingJobs } from "./src/db/pipelines.js";
-import { proccessJob } from "./processjob.js";
+import { proccessJob } from "./src/processjob.js";
 import { job } from "./src/types.js";
 import { jobs } from "./src/db/schema.js";
 import { deliverToSubscribers } from "./delivery.js";

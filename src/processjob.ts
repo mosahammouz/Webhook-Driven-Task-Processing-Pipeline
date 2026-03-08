@@ -1,5 +1,5 @@
-import { updateJobPayload,getPendingJobs, markJobCompleted ,markJobFailed ,incrementJobAttempts,getPipelineById } from "./src/db/pipelines.js"
-import { job } from "./src/types.js"
+import { updateJobPayload,getPendingJobs, markJobCompleted ,markJobFailed ,incrementJobAttempts,getPipelineById } from "./db/pipelines.js"
+import { job } from "./types.js";
 export async function proccessJob (currentJob: job){
      const pipeline = await getPipelineById(currentJob.pipelineId);
      if(!pipeline){ console.log("Pipeline not found for job(id):", currentJob.id); return;}
