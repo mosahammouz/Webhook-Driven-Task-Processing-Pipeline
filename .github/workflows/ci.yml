@@ -15,11 +15,11 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: webhook_test
+          POSTGRES_USER: myuser
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: webhookdb 
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -U myuser -d webhookdb"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -34,8 +34,12 @@ jobs:
       - name: Build Docker containers
         run: docker compose up -d --build
 
-      - name: Wait for services
-        run: sleep 15
+      - name: Wait for DB to be ready
+        run: |
+          until docker exec webhook-db pg_isready -U myuser -d webhookdb; do
+            echo "Waiting for DB..."
+            sleep 2
+          done
 
       - name: Run tests in worker container
         run: docker exec webhook-worker npm test
