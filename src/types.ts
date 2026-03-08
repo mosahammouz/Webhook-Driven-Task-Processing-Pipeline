@@ -1,3 +1,4 @@
+
 export type ActionType = "toUbberCase" | "filterPrice" | "addTimesTamp";
 export type pipeline = {    // user will create this
     id: string,
@@ -14,3 +15,10 @@ export type job = {
     attempts: number,
     createdAt: Date
 }
+export type Subscriber = {
+    id: number;          
+    pipelineId: string;  
+    url: string;
+    status: string;
+}
+

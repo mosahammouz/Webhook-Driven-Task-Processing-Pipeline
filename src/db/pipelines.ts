@@ -1,7 +1,7 @@
 import { promises } from "node:dns";
-import {ActionType, pipeline , job}from "../types.js"
+import {ActionType, pipeline , job, Subscriber}from "../types.js"
 import { db } from "./index.js"
-import { pipelines as pipelinesTable  , jobs as jobsTable} from "./schema.js";
+import { pipelines as pipelinesTable  , jobs as jobsTable , subscribers as subscribersTable , deliveryAttempts as deliveryAttemptsTable } from "./schema.js";
 import { eq ,sql} from "drizzle-orm";
 
 export async function createPipeline(newPipeline: pipeline): Promise<pipeline> {
@@ -78,4 +78,25 @@ export async function updateJobPayload(jobId: string, payload: Record<string, an
     console.error("Failed to update job payload for jobId:", jobId, err);
     throw err;
   }
+}
+
+export async function createSubscriber(newSub: Subscriber){
+   const ins = await db.insert(subscribersTable).values({
+    pipelineId: newSub.pipelineId,
+    url: newSub.url,
+    status: newSub.status
+  }).returning();
+  return ins[0];
+}
+
+export async function getSubscriperByPipelineId(pipelineId: string){
+  return await db.select().from(subscribersTable).where(eq( subscribersTable.pipelineId, pipelineId));
+}
+export async function putInDeliveryAttemptsTable(jobId: string , subId: number , attempts: number , status: "success" | "failed"){
+  await db.insert(deliveryAttemptsTable).values({
+    jobId: jobId,
+    subscriberId: subId,
+    attemptsNumber: attempts,
+    status: status,
+  })
 }

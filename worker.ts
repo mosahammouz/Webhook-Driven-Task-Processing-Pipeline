@@ -3,7 +3,7 @@ import { getPendingJobs } from "./src/db/pipelines.js";
 import { proccessJob } from "./processjob.js";
 import { job } from "./src/types.js";
 import { jobs } from "./src/db/schema.js";
-
+import { deliverToSubscribers } from "./delivery.js";
 const POLL_INTERVAL = 2000;
 
 async function workerLoop() {
@@ -14,7 +14,8 @@ async function workerLoop() {
       const jobsPending: job[] = await getPendingJobs();
       for (const currentJob of jobsPending) {
         console.log("Processing job id:", currentJob.id);
-        await proccessJob(currentJob);
+        const updatedCurrJob = await proccessJob(currentJob);
+        await deliverToSubscribers(updatedCurrJob!);
       }
       if(jobsPending.length > 0) console.log("Finished background task");
     } catch (err) {

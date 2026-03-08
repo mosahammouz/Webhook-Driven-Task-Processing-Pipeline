@@ -32,6 +32,8 @@ export async function proccessJob (currentJob: job){
     await updateJobPayload(currentJob.id, res);
 
     await markJobCompleted(currentJob.id);
+            return { ...currentJob, payload: res };
+
      }catch(err){
           await incrementJobAttempts(currentJob.id);
            if (currentJob.attempts + 1 >= 5) {

@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from "express";
-import { pipeline,ActionType } from "./types";
-import { createPipeline ,getPipelineByPath , createJob} from "./db/pipelines";
+import { pipeline,ActionType,Subscriber } from "./types";
+import { createPipeline ,getPipelineByPath , createJob, createSubscriber} from "./db/pipelines";
 const app = express(); 
 const PORT = 3000;
 app.use(express.json());
@@ -51,10 +51,31 @@ async function handlerWebhook(req: Request, res: Response) {
   return res.status(202).json({ message: "Webhook accepted",  jobId: savedJob.id,});
 
   }
+  let s=0;
+async function handlerSubscribers(req: Request, res: Response){
+  try{
+  const {pipelineId} = req.params;
+  const {url}=req.body;
+  if (!url || typeof url !== "string") {
+      return res.status(400).json({ error: "url is required and must be a string" });
+    }
 
+  s++;
+  const newSubscriper: Subscriber = {
+   id: s, 
+   pipelineId: pipelineId as string,
+   url: url,
+   status: "active",
+  };
+    const savedSubscriber = await createSubscriber(newSubscriper);
+     return res.status(201).json({message: "Subscriber added",subscriber: savedSubscriber,   });
+   }catch(err){console.log("err in handler subscriber")}
+}
+  
 
 
 app.get("/", handlerHello);
 app.post("/pipelines",handlerPipelines);
 app.post("/webhooks/:path",handlerWebhook);
+app.post("/pipelines/:pipelineId/subscribers",handlerSubscribers);// the body has only 1 url//
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
