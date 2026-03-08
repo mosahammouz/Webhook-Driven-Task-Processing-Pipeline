@@ -17,6 +17,7 @@ async function workerLoop() {
         const updatedCurrJob = await proccessJob(currentJob);
         await deliverToSubscribers(updatedCurrJob!);
       }
+      
       if(jobsPending.length > 0) console.log("Finished background task");
     } catch (err) {
       console.error("Worker error:", err);

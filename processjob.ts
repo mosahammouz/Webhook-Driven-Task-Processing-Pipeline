@@ -11,9 +11,12 @@ export async function proccessJob (currentJob: job){
         const field = actionConfig.field;
         if(field in res)res[field]=String(res[field]).toUpperCase();
     }
-    if(pipeline.actionType === "addTimesTamp"){
-        res.timestamp = new Date (); // add a property (the current time in milliseconds )
-    }
+     if (pipeline.actionType === "addTimesTamp") {
+            const field = actionConfig?.field || "timestamp";
+            res[field] = new Date().toISOString();
+             console.log("Processed payload (with sentAt):", res);
+        }
+
 
 
    if (pipeline.actionType === "filterPrice") {

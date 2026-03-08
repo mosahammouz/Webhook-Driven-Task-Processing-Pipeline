@@ -1,0 +1,77 @@
+version: "3.9"
+
+services:
+  # API server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: webhook-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+    depends_on:
+      - db
+      - subscriber
+    networks:
+      - webhook-network
+
+  # Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: webhook-worker
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+    depends_on:
+      - db
+      - subscriber
+    networks:
+      - webhook-network
+
+  # PostgreSQL database
+  db:
+    image: postgres:15
+    container_name: webhook-db
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: webhookdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - webhook-network
+
+  # Fake subscriber for testing
+  subscriber:
+    build:
+      context: .
+      dockerfile: Dockerfile.subscriber
+    container_name: webhook-subscriber
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./fake-server.ts:/app/fake-server.ts
+      - /app/node_modules
+    networks:
+      - webhook-network
+
+# Named volume for DB persistence
+volumes:
+  db_data:
+
+# Shared network
+networks:
+  webhook-network:
+    driver: bridge
