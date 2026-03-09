@@ -1,0 +1,39 @@
+# WEBHOOK PROCESSING SERVICE
+A backend service that receives webhooks, queues jobs for background processing, and delivers results to registered subscribers.  
+The system follows an event-driven architecture similar to automation platforms like Zapier.
+
+------
+
+## Features & Tech Stack
+- Webhook ingestion API (POST "/webhooks/:path") to receive the incoming data
+- Use **Drizzle ORM** to write TypeScript queries for PostgreSQL.
+- Action types (to uppeer case , filter price , add timestamp ) one of them will be performed in the job according to what we have in the pipeline
+- Worker loop wroks in the background so asyncronous operations will be executed while worker processing(A core Design pattern in asynchronous programming)
+- Result delivery to subscriber URL(s). Personally, I used **Axios** API, cuz i'm comfortable with.
+- Dockerfiles to let the full service runs via docker-compose.yml
+- I designed 4 tables to solve this project 
+- Designed a fake-server on port 5000 to check that the reuslt delivered to the subscribers and log the payload so you can notice that the action type is performed like toUpperCase
+- Use **vitest** for testing in CI 
+
+----
+## Author
+
+Mousa Ayman Waleed Hammouz  
+Computer Science Student
+
+#### The intricate details will be discussed in the demo
+--------------------------------------------------------------------------------------
+## Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/mosahammouz/Webhook-Driven-Task-Processing-Pipeline.git
+
+# 2. Navigate into the project folder
+cd Webhook-Driven-Task-Processing-Pipeline
+
+# 3. Build and start the service using Docker Compose
+docker-compose up --build
+
+#4. To stope Docker Compose
+docker-compose down 
