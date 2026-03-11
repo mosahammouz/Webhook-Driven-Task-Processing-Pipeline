@@ -39,11 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for Postgres to be ready
-        run: |
-          echo "Waiting for Postgres..."
-          timeout 30s bash -c 'until pg_isready -h postgres -p 5432 -U myuser; do sleep 2; done'
-
       - name: Run tests
         run: npm test
 
