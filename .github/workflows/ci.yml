@@ -51,8 +51,12 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build Docker images
-        run: |
-          docker build -t webhook-api -f Dockerfile .
-          docker build -t webhook-worker -f Dockerfile.worker .
-          docker build -t webhook-subscriber -f Dockerfile.subscriber .
+      - name: Build Docker image
+        run: docker build -t webhook-app .
+
+      - name: Start containers
+        run: docker-compose up -d
+
+      - name: Stop containers
+        if: always()
+        run: docker-compose down
