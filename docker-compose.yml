@@ -19,37 +19,37 @@ services:
 
   # API server
   api:
-    build: .
+    image: webhook-app      # single image
     container_name: webhook-api
+    command: npm run start
     ports:
       - "3000:3000"
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
     depends_on:
       - db
-    command: npm run start
     networks:
       - webhook-network
 
   # Worker
   worker:
-    build: .
+    image: webhook-app      # reuse same image
     container_name: webhook-worker
+    command: npm run worker
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
     depends_on:
       - db
-    command: npm run worker
     networks:
       - webhook-network
 
-  # Fake subscriber for testing (optional)
+  # Fake subscriber (optional)
   subscriber:
-    build: .
+    image: webhook-app      # reuse same image
     container_name: webhook-subscriber
+    command: npx tsx fake-server.ts
     ports:
       - "5000:5000"
-    command: npx tsx fake-server.ts
     networks:
       - webhook-network
 
