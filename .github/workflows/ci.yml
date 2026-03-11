@@ -17,8 +17,6 @@ jobs:
           POSTGRES_USER: myuser
           POSTGRES_PASSWORD: mypassword
           POSTGRES_DB: webhookdb
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U myuser -d webhookdb"
           --health-interval 10s
@@ -26,7 +24,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://myuser:mypassword@localhost:5432/webhookdb
+      DATABASE_URL: postgres://myuser:mypassword@postgres:5432/webhookdb
       NODE_ENV: test
 
     steps:
@@ -41,22 +39,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Wait for Postgres
+      - name: Wait for Postgres to be ready
         run: |
-          echo "Waiting for Postgres to be ready..."
-          until pg_isready -h localhost -p 5432 -U myuser; do
-            sleep 2
-          done
+          echo "Waiting for Postgres..."
+          timeout 30s bash -c 'until pg_isready -h postgres -p 5432 -U myuser; do sleep 2; done'
 
       - name: Run tests
         run: npm test
 
       - name: Build Docker image
         run: docker build -t webhook-app .
-
-      - name: Start containers
-        run: docker-compose up -d
-
-      - name: Stop containers
-        if: always()
-        run: docker-compose down
