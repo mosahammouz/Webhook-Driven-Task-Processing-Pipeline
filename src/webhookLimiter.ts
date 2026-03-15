@@ -5,7 +5,7 @@ export const webhookLimiter = rateLimit({  // as a middleware  ratelimit() is a 
   windowMs: 60 * 1000, // 1 minute
   max: 4, // no. of requests
   keyGenerator : (req: Request) => {
-    return req.params.pipelineId as string; // always a string
+    return req.params.path as string; // always a string
   },
   standardHeaders: true,
   legacyHeaders: false,
