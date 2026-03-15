@@ -3,10 +3,11 @@ dotenv.config();
 import express, { type Request, type Response } from "express";
 import { pipeline,ActionType,Subscriber } from "./types";
 import { createPipeline ,getPipelineByPath , createJob, createSubscriber} from "./db/pipelines";
-import { authMiddleware } from "./auth.js";
+import { authMiddleware, verifyWebhookSignature } from "./auth.js";
 const app = express(); 
 const PORT = 3000;
-app.use(express.json());
+app.use(express.json({verify: (req: any, res, buf) => {req.rawBody = buf.toString();},}));
+
 const validActions: ActionType[] = ["toUbberCase", "filterPrice", "addTimesTamp"];
 
 function handlerHello(req: Request, res: Response) {
@@ -33,6 +34,11 @@ async function handlerPipelines(req: Request , resp: Response){
 
 
 async function handlerWebhook(req: Request, res: Response) {
+  const signature = req.headers["x-webhook-signature"] as string;
+      if(!signature){return res.status(401).json({err: "signature is missing !"});}
+      const isSignValid = verifyWebhookSignature(req.rawBody!, signature );
+      if(!isSignValid)return res.status(401).json({err: "Invalid signature"});
+
     const path = req.params.path as string;
     const data = req.body;
     const pipelineRow = await getPipelineByPath(path);
