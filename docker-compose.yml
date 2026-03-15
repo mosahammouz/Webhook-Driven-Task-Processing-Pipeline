@@ -28,7 +28,6 @@ services:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
     volumes:
       - .:/app                     # mount local code
-      - /app/node_modules          # keep container node_modules separate
     depends_on:
       - db
     networks:
@@ -44,7 +43,6 @@ services:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
     volumes:
       - .:/app
-      - /app/node_modules
     depends_on:
       - db
     networks:

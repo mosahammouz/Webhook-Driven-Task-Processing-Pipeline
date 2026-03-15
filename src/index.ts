@@ -4,6 +4,7 @@ import express, { type Request, type Response } from "express";
 import { pipeline,ActionType,Subscriber } from "./types";
 import { createPipeline ,getPipelineByPath , createJob, createSubscriber} from "./db/pipelines";
 import { authMiddleware, verifyWebhookSignature } from "./auth.js";
+import { webhookLimiter } from "./webhookLimiter.js";
 const app = express(); 
 const PORT = 3000;
 app.use(express.json({verify: (req: any, res, buf) => {req.rawBody = buf.toString();},}));
@@ -20,7 +21,8 @@ async function handlerPipelines(req: Request , resp: Response){
   const {webhookPath, actionType: rawActionType ,actionConfig} =req.body;
    if (!webhookPath || typeof webhookPath !== "string") {return resp.status(400).json({ error: "webhookPath is required and must be a string" });}
   if (!validActions.includes(rawActionType)) {return resp.status(400).json({ error: `actionType must be one of ${validActions.join(", ")}` });}
-   const actionType = rawActionType as ActionType;
+  // to avoid fake webhooks (fake :path ) 
+  const actionType = rawActionType as ActionType;
   const newPipeline: pipeline ={
     id: Date.now().toString(),
     webhookPath,
@@ -84,6 +86,6 @@ async function handlerSubscribers(req: Request, res: Response){
 
 app.get("/", handlerHello);
 app.post("/pipelines",authMiddleware,handlerPipelines);
-app.post("/webhooks/:path",handlerWebhook);
+app.post("/webhooks/:path",webhookLimiter,handlerWebhook);
 app.post("/pipelines/:pipelineId/subscribers",authMiddleware,handlerSubscribers);// the body has only 1 url//
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
