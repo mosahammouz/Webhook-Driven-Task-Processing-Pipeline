@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-  # PostgreSQL database
   db:
     image: postgres:15
     container_name: webhook-db
@@ -17,47 +16,55 @@ services:
     networks:
       - webhook-network
 
-  # API server
   api:
-    image: webhook-app      # single image
+    image: webhook-app             # use prebuilt image
     container_name: webhook-api
-    command: npm run start
+    command: npm run start           # start script with nodemon recommended
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+    volumes:
+      - .:/app                     # mount local code
+      - /app/node_modules          # keep container node_modules separate
     depends_on:
       - db
     networks:
       - webhook-network
 
-  # Worker
   worker:
-    image: webhook-app      # reuse same image
+    image: webhook-app             # reuse same image
     container_name: webhook-worker
     command: npm run worker
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+    volumes:
+      - .:/app
+      - /app/node_modules
     depends_on:
       - db
     networks:
       - webhook-network
 
-  # Fake subscriber (optional)
   subscriber:
-    image: webhook-app      # reuse same image
+    image: webhook-app             # reuse same image
     container_name: webhook-subscriber
     command: npx tsx fake-server.ts
     ports:
       - "5000:5000"
+    volumes:
+      - .:/app
+      - /app/node_modules
     networks:
       - webhook-network
 
-# Named volume for DB persistence
 volumes:
   db_data:
 
-# Shared network
 networks:
   webhook-network:
     driver: bridge
