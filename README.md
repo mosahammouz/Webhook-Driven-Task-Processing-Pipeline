@@ -15,6 +15,7 @@ The system follows an event-driven architecture similar to automation platforms 
 - Designed a fake-server on port 5000 to check that the reuslt delivered to the subscribers and log the payload so you can notice that the action type is performed like toUpperCase
 - Use **vitest** for testing in CI 
 - Applied : authentication, webhook signature verification, rate limiting to my project 
+- Workers can be horizontally scaled by adding new workerloops
 ----
 ## Author
 

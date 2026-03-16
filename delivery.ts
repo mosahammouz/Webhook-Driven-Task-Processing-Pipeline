@@ -9,7 +9,7 @@ export async function deliverToSubscribers(currJob: job) {
   for (const sub of subscribers) {
     let attempts = 1;
     let delivered = false;
-    while (!delivered && attempts <= MAX_ATTEMPTS) {
+    while (!delivered && attempts <= MAX_ATTEMPTS) { // retry logic 
       try {
         const resp = await axios.post(sub.url, currJob.payload);
         console.log(`Job ${currJob.id} delivered to subscriber ${sub.id}, status: ${resp.status}`);
