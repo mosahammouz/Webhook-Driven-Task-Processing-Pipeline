@@ -5,9 +5,12 @@ import { pipeline,ActionType,Subscriber } from "./types";
 import { createPipeline ,getPipelineByPath , createJob, createSubscriber} from "./db/pipelines";
 import { authMiddleware, verifyWebhookSignature } from "./auth.js";
 import { webhookLimiter } from "./webhookLimiter.js";
+import { getChannel, connectRabbitMQ } from "./rabbitmq";
+
 const app = express(); 
 const PORT = 3000;
 app.use(express.json({verify: (req: any, res, buf) => {req.rawBody = buf.toString();},}));
+await connectRabbitMQ();
 
 const validActions: ActionType[] = ["toUbberCase", "filterPrice", "addTimesTamp"];
 
@@ -55,12 +58,26 @@ async function handlerWebhook(req: Request, res: Response) {
     attempts: 0,
     createdAt: new Date(),
   };
+
+  
   const savedJob = await createJob(newJob);
   if(!savedJob){return res.status(404).json({err : "savedjob not found"});}
-  console.log("Job queued:", savedJob);
-  return res.status(202).json({ message: "Webhook accepted",  jobId: savedJob.id,});
 
+
+   // Push job to RabbitMQ
+  const channel = getChannel();
+  channel.publish(
+    "jobs_exchange",       // exchange name
+    "jobs_routing",        // routing key
+    Buffer.from(JSON.stringify(newJob)), 
+    { persistent: true }   // ensure job survives broker restart
+  );
+
+  console.log("Job queued in RabbitMQ:", newJob);
+  return res.status(202).json({ message: "Webhook accepted", jobId: newJob.id });
   }
+
+
   let s=0;
 async function handlerSubscribers(req: Request, res: Response){
   try{
@@ -78,6 +95,7 @@ async function handlerSubscribers(req: Request, res: Response){
    status: "active",
   };
     const savedSubscriber = await createSubscriber(newSubscriper);
+    
      return res.status(201).json({message: "Subscriber added",subscriber: savedSubscriber,   });
    }catch(err){console.log("err in handler subscriber")}
 }

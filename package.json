@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx ./src/index.ts",
-    "worker": "tsx ./worker.ts",
+    "rabbitWorker": "tsx ./src/rabbitWorker.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:rollback": "drizzle-kit rollback",

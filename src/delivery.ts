@@ -1,7 +1,7 @@
 import axios from "axios";
-import { job } from "./src/types";
-import { getSubscriperByPipelineId,putInDeliveryAttemptsTable } from "./src/db/pipelines";
-import { jobs } from "./src/db/schema";
+import { job } from "./types";
+import { getSubscriperByPipelineId,putInDeliveryAttemptsTable } from "./db/pipelines";
+import { jobs } from "./db/schema";
 const   MAX_ATTEMPTS = 5;
 
 export async function deliverToSubscribers(currJob: job) {

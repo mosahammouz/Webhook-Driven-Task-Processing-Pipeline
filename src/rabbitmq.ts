@@ -1,14 +1,35 @@
-import amqp from "amqplib"
-let  channel: amqp.Channel;
+import amqp from "amqplib";
 
-export async function connectRabbitMQ() {
-    const connection = await amqp.connect(process.env.RABBITMQ_URL!);// i am crazy confident that the uri is included in .env
-    channel = await connection.createChannel();
-    await channel.assertQueue("jobs", { durable: true }); //{ durable: true }ensures messages survive RabbitMQ restarts. // jobs the name os the queue
-   console.log("RabbitMQ connected, queue 'jobs' ready");
-} 
+// infer the real Promise return type
+type AmqpConnection = Awaited<ReturnType<typeof amqp.connect>>;
+type AmqpChannel = Awaited<ReturnType<AmqpConnection["createChannel"]>>;
 
-export function getChannel() {
+let connection: AmqpConnection | null = null;
+let channel: AmqpChannel | null = null;
+
+export async function connectRabbitMQ(): Promise<AmqpChannel> {
+  if (channel) return channel; // reuse if already connected
+
+  connection = await amqp.connect(process.env.RABBITMQ_URL!);
+  channel = await connection.createChannel();
+
+  await channel.assertExchange("jobs_exchange", "direct", { durable: true });
+  await channel.assertQueue("jobs_queue", { durable: true });
+  await channel.bindQueue("jobs_queue", "jobs_exchange", "jobs_routing");
+
+  console.log("RabbitMQ connection and channel ready");
+  return channel;
+}
+
+export function getChannel(): AmqpChannel {
   if (!channel) throw new Error("RabbitMQ channel not initialized");
   return channel;
+}
+
+export async function closeRabbitMQ() {
+  if (channel) await channel.close();
+  if (connection) await connection.close();
+  channel = null;
+  connection = null;
+  console.log("RabbitMQ connection closed");
 }
