@@ -6,16 +6,16 @@ The system follows an event-driven architecture similar to automation platforms 
 
 ## Features & Tech Stack
 - Webhook ingestion API (POST "/webhooks/:path") to receive the incoming data.
+- Use **RabbitMQ** message broker to decouple the webhook API from background workers and if the worker crashes or the server restarts, messages aren’t lost(**Reliability**)
 - Use **Drizzle ORM** to write TypeScript queries for PostgreSQL.
 - Action types (to uppeer case , filter price , add timestamp ) one of them will be performed in the job according to what we have in the pipeline.
-- Worker loop wroks in the background so asyncronous operations will be executed while worker processing(A core Design pattern in asynchronous programming).
 - Result delivery to subscriber URL(s). Personally, I used **Axios** API, cuz i'm comfortable with.
-- Dockerfile to let the full service runs via docker-compose.yml (2 images and 4 containers)so my code is **DRY**.
+- Dockerfile to let the full service runs via docker-compose.yml (3 images and 4 containers)so my code is **DRY**.
 - I designed 4 tables to solve this project.
 - Designed a fake-server on port 5000 to check that the reuslt delivered to the subscribers and log the payload so you can notice that the action type is performed like toUpperCase.
 - Use **vitest** for testing in CI.
 - Applied : authentication, webhook signature verification, rate limiting to my project. 
-- Workers can be **horizontally scaled** by adding new workerloops.
+- Workers can be **horizontally scaled** by adding new rabbitWorkers.
 - Used **Postman** to test API endpoints.
 ----
 ## Author
