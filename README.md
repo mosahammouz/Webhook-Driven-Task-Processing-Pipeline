@@ -18,6 +18,9 @@ The system follows an event-driven architecture similar to automation platforms 
 - Workers can be **horizontally scaled** by adding new rabbitWorkers.
 - Used **Postman** to test API endpoints.
 ----
+- **the Design of RabbitMQ**
+![image alt](https://github.com/mosahammouz/Webhook-Driven-Task-Processing-Pipeline/blob/4979cbb1bf271e334746d0d95b9cb1b223a0f6d2/RabbitMQ%20cluster.png)
+----
 ## Author
 
 Mousa Ayman Waleed Hammouz  
