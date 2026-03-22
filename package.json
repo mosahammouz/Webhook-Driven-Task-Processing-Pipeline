@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx ./src/index.ts",
-    "worker": "tsx ./worker.ts",
+    "rabbitWorker": "tsx ./src/rabbitWorker.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:rollback": "drizzle-kit rollback",
@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.3",
@@ -24,6 +25,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "axios": "^1.13.6",
     "dotenv": "^17.3.1",
     "drizzle-kit": "^0.31.9",

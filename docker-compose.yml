@@ -15,41 +15,71 @@ services:
       - db_data:/var/lib/postgresql/data
     networks:
       - webhook-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d webhookdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: webhook-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - webhook-network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
-    image: webhook-app             # use prebuilt image
+    image: webhook-app
     container_name: webhook-api
-    command: npm run start           # start script with nodemon recommended
+    command: npm run start
     ports:
       - "3000:3000"
     env_file:
       - .env
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     volumes:
-      - .:/app                     # mount local code
+      - .:/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - webhook-network
 
   worker:
-    image: webhook-app             # reuse same image
+    image: webhook-app
     container_name: webhook-worker
-    command: npm run worker
+    command: npm run rabbitWorker
     env_file:
       - .env
     environment:
       DATABASE_URL: postgres://myuser:mypassword@db:5432/webhookdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
     volumes:
       - .:/app
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - webhook-network
 
   subscriber:
-    image: webhook-app             # reuse same image
+    image: webhook-app
     container_name: webhook-subscriber
     command: npx tsx fake-server.ts
     ports:
