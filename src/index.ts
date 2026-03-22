@@ -66,7 +66,7 @@ async function handlerWebhook(req: Request, res: Response) {
 
    // Push job to RabbitMQ
   const channel = getChannel();
-  channel.publish(
+  channel.publish( // publish is a function 
     "jobs_exchange",       // exchange name
     "jobs_routing",        // routing key
     Buffer.from(JSON.stringify(newJob)), 
