@@ -38,6 +38,32 @@ The system follows an event-driven architecture similar to automation platforms 
 ![image alt](https://github.com/mosahammouz/Webhook-Driven-Task-Processing-Pipeline/blob/4979cbb1bf271e334746d0d95b9cb1b223a0f6d2/RabbitMQ%20cluster.png)
 ----
 
+
+## API Documentation
+
+### Endpoints
+
+- **GET /**  
+  Returns a simple hello message.  
+
+- **POST /pipelines**  
+  Create a new pipeline. Requires authentication.  
+
+- **POST /webhooks/:path**  
+  Receive a webhook for the specified pipeline path. Includes `x-webhook-signature` and optional `x-idempotency-key` headers.  
+
+- **POST /pipelines/:pipelineId/subscribers**  
+  Add a subscriber URL to a pipeline. Requires authentication. 
+----
+
+## Design Decisions
+- Event-driven architecture using RabbitMQ for asynchronous job processing.
+- PostgreSQL for reliable storage of jobs, pipelines, subscribers, and idempotency keys.
+- Idempotency keys implemented to handle edge cases and prevent duplicate processing.
+- Worker processes separated from API for scalability and reliability.
+- Dockerized services for easy deployment and consistent environments.
+
+----
 ### The intricate details will be discussed in the demo
 --------------------------------------------------------------------------------------
 ## Installation
