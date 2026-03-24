@@ -1,82 +1,196 @@
-# WEBHOOK PROCESSING SERVICE
-A backend service that receives webhooks, queues jobs for background processing, and delivers results to registered subscribers.  
-The system follows an event-driven architecture similar to automation platforms like Zapier.
+Webhook-Driven Task Processing Pipeline
+An event-driven backend service that receives webhooks, processes them asynchronously through a job queue, and delivers results to registered subscribers — a simplified version of Zapier.
 
-------
+Webhook → Queue → Worker → Process → Deliver to Subscribers
+Tech Stack
+Runtime: Node.js + TypeScript
+Database: PostgreSQL (via Drizzle ORM)
+Message Broker: RabbitMQ
+HTTP Framework: Express
+Containerization: Docker + Docker Compose
+CI/CD: GitHub Actions
+Validation: Zod
+Testing: Vitest
+Architecture
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  API Service │────▶│  RabbitMQ   │────▶│   Worker    │
+│  (port 3000) │     │  (port 5672)│     │   Service   │
+└─────────────┘     └─────────────┘     └──────┬──────┘
+       │                                        │
+       ▼                                        ▼
+┌─────────────┐                        ┌─────────────┐
+│  PostgreSQL  │◀───────────────────────│  Processors │
+│  (port 5433) │                        │  + Delivery │
+└─────────────┘                        └─────────────┘
+How it works
+User creates a pipeline with one or more processors
+User registers subscribers (URLs that receive processed results)
+A webhook hits POST /webhooks/:pipelineId
+API saves the job to the database with status queued
+API publishes the job to RabbitMQ
+Worker consumes the job, runs processors in order
+Worker delivers the result to all subscribers via HTTP POST
+Failed deliveries are retried up to 3 times with exponential backoff
+All attempts are recorded in the database
+Getting Started
+Prerequisites
+Docker + Docker Compose
+Node.js
+npm
+1. Clone the repository
+git clone https://github.com/HayaTahboub/Webhook-Driven.git
+cd Webhook-Driven
+2. Create .env file
+PORT=3000
+DATABASE_URL=postgres://postgres:password@db:5432/webhook
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+3. Start everything
+docker compose up --build
+This starts 4 services:
 
-## Features & Tech Stack
-- Webhook ingestion API (POST "/webhooks/:path") to receive the incoming data.
-- Use **RabbitMQ** message broker to decouple the webhook API from background workers and if the worker crashes or the server restarts, messages aren’t lost(**Reliability**)
-- Use **Drizzle ORM** to write TypeScript queries for PostgreSQL.
-- Action types (to uppeer case , filter price , add timestamp ) one of them will be performed in the job according to what we have in the pipeline.
-- Result delivery to subscriber URL(s). Personally, I used **Axios** API, cuz i'm comfortable with.
-- Dockerfile to let the full service runs via docker-compose.yml (3 images and 4 containers)so my code is **DRY**.
-- I designed 5 tables to solve this project.
-- Designed a fake-server on port 5000 to check that the reuslt delivered to the subscribers and log the payload so you can notice that the action type is performed like toUpperCase.
-- Use **vitest** for testing in CI.
-- Applied : authentication, webhook signature verification, rate limiting to my project. 
-- Workers can be **horizontally scaled** by adding new rabbitWorkers.
-- Used **Postman** to test API endpoints.
-----
-## Architecture and job lifecycle
+API on http://localhost:3000
+Worker (background)
+PostgreSQL on localhost:5433
+RabbitMQ on localhost:5672 (management UI: http://localhost:15672)
+API Reference
+Pipelines
+Method	Endpoint	Description
+POST	/pipelines	Create a pipeline
+GET	/pipelines	Get all pipelines
+GET	/pipelines/:id	Get pipeline by ID
+PUT	/pipelines/:id	Update pipeline
+DELETE	/pipelines/:id	Delete pipeline
+Create pipeline example:
 
-- **Architecture** : External Client → POST webhook/:path → AuthMiddleware → API Server (Express + Postgres) → RabbitMQ → Worker Service (Process Action) → Delivery Layer (Axios) → Subscriber Endpoints.
+POST /pipelines
+{
+  "name": "My Pipeline",
+  "processors": [
+    {
+      "type": "transform",
+      "config": {
+        "uppercaseFields": ["name"],
+        "addTimestamp": true
+      }
+    }
+  ]
+}
+Subscribers
+Method	Endpoint	Description
+POST	/subscribers	Register a subscriber
+GET	/subscribers	Get all subscribers
+GET	/subscribers/:id	Get subscriber by ID
+PUT	/subscribers/:id	Update subscriber
+DELETE	/subscribers/:id	Delete subscriber
+Create subscriber example:
 
-- **Job lifecycle** : Received (API) → Queued (RabbitMQ) → Processing (Worker) → Completed (Delivered) OR Failed (Max Retries) OR Skipped(edge case: duplicate request with the same idempotency key).
+POST /subscribers
+{
+  "pipelineId": "your-pipeline-uuid",
+  "targetUrl": "https://your-endpoint.com/webhook"
+}
+Webhooks
+Method	Endpoint	Description
+POST	/webhooks/:pipelineId	Trigger a webhook event
+Returns 202 Accepted with a jobId.
 
-----
-## Creativity
----- 
+Jobs
+Method	Endpoint	Description
+GET	/jobs	Get all jobs
+GET	/jobs/:id	Get job by ID
+GET	/jobs/:id/attempts	Get delivery attempts for a job
+Job statuses: queued → processing → completed / skipped
 
-- Reduced **API latency** by ~83% (from ~1200 ms to ~200 ms) by creatively using RabbitMQ
-- Handled the **Edge Case** of duplicate webhook requests using an **Idempotency Key**, ensuring each webhook is processed exactly once.
+Processor Types
+1. Transform
+Modifies the incoming payload.
 
-----
+{
+  "type": "transform",
+  "config": {
+    "uppercaseFields": ["name", "city"],
+    "addTimestamp": true
+  }
+}
+2. Filter
+Conditionally allows the job to continue. If the condition fails, the job is marked as skipped and no delivery occurs.
 
-## **the Design of RabbitMQ**
+{
+  "type": "filter",
+  "config": {
+    "field": "amount",
+    "operator": ">",
+    "value": 100
+  }
+}
+Supported operators: >, <, ==
 
-![image alt](https://github.com/mosahammouz/Webhook-Driven-Task-Processing-Pipeline/blob/4979cbb1bf271e334746d0d95b9cb1b223a0f6d2/RabbitMQ%20cluster.png)
-----
+3. HTTP Enrichment
+Calls an external API and merges the response into the payload.
 
+{
+  "type": "http-enrichment",
+  "config": {
+    "url": "https://jsonplaceholder.typicode.com/users/1"
+  }
+}
+Chaining Processors
+You can chain multiple processors in a single pipeline:
 
-## API Documentation
+{
+  "name": "Enrich then Transform",
+  "processors": [
+    {
+      "type": "http-enrichment",
+      "config": { "url": "https://api.example.com/data" }
+    },
+    {
+      "type": "transform",
+      "config": { "uppercaseFields": ["name"], "addTimestamp": true }
+    }
+  ]
+}
+Retry Logic
+For each subscriber, the worker attempts delivery up to 3 times with exponential backoff:
 
-### Endpoints
+Attempt	Delay
+1	immediate
+2	2 seconds
+3	4 seconds
+Every attempt is recorded in delivery_attempts with status, response code, and timestamp.
 
-- **GET /**  
-  Returns a simple hello message.  
+Database Schema
+pipelines         → id, name, processors (JSONB), created_at
+subscribers       → id, pipeline_id, target_url, created_at
+jobs              → id, pipeline_id, payload, status, result, error_message, created_at, processed_at
+delivery_attempts → id, job_id, subscriber_id, attempt_number, status, response_code, created_at
+Running Tests
+Unit tests (processors):
+npm test
+Integration tests (requires Docker running):
+docker compose up -d
+npm run test:integration
+Demo Walkthrough
+# 1. Create a pipeline
+curl -X POST http://localhost:3000/pipelines \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Demo Pipeline",
+    "processors": [{ "type": "transform", "config": { "uppercaseFields": ["name"], "addTimestamp": true } }]
+  }'
 
-- **POST /pipelines**  
-  Create a new pipeline. Requires authentication.  
+# 2. Create a subscriber (use https://webhook.site for a real URL)
+curl -X POST http://localhost:3000/subscribers \
+  -H "Content-Type: application/json" \
+  -d '{ "pipelineId": "PIPELINE_ID", "targetUrl": "https://webhook.site/YOUR-ID" }'
 
-- **POST /webhooks/:path**  
-  Receive a webhook for the specified pipeline path. Includes `x-webhook-signature` and optional `x-idempotency-key` headers.  
+# 3. Trigger a webhook
+curl -X POST http://localhost:3000/webhooks/PIPELINE_ID \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "mohamed", "amount": 200 }'
 
-- **POST /pipelines/:pipelineId/subscribers**  
-  Add a subscriber URL to a pipeline. Requires authentication. 
-----
+# 4. Check job status
+curl http://localhost:3000/jobs/JOB_ID
 
-## Design Decisions
-- Event-driven architecture using RabbitMQ for asynchronous job processing.
-- PostgreSQL for reliable storage of jobs, pipelines, subscribers, and idempotency keys.
-- Idempotency keys implemented to handle edge cases and prevent duplicate processing.
-- Worker processes separated from API for scalability and reliability.
-- Dockerized services for easy deployment and consistent environments.
-
-----
-### The intricate details will be discussed in the demo
---------------------------------------------------------------------------------------
-## Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/mosahammouz/Webhook-Driven-Task-Processing-Pipeline.git
-
-# 2. Navigate into the project folder
-cd Webhook-Driven-Task-Processing-Pipeline
-
-# 3. Build and start the service using Docker Compose
-docker-compose up --build
-
-#4. To stope Docker Compose
-docker-compose down 
+# 5. Check delivery attempts
+curl http://localhost:3000/jobs/JOB_ID/attempts
