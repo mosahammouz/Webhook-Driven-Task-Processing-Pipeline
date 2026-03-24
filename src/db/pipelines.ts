@@ -1,7 +1,7 @@
 import { promises } from "node:dns";
 import {ActionType, pipeline , job, Subscriber}from "../types.js"
 import { db } from "./index.js"
-import { pipelines as pipelinesTable  , jobs as jobsTable , subscribers as subscribersTable , deliveryAttempts as deliveryAttemptsTable } from "./schema.js";
+import { pipelines as pipelinesTable  , jobs as jobsTable , subscribers as subscribersTable , deliveryAttempts as deliveryAttemptsTable , idempotencyKeys as idempotencyKeysTable} from "./schema.js";
 import { eq ,sql} from "drizzle-orm";
 
 export async function createPipeline(newPipeline: pipeline): Promise<pipeline> {
@@ -99,4 +99,25 @@ export async function putInDeliveryAttemptsTable(jobId: string , subId: number ,
     attemptsNumber: attempts,
     status: status,
   })
+}
+
+export async function hasIdempotenctyKey(key: string) {
+ const result = await db
+    .select()
+    .from(idempotencyKeysTable)
+    .where(eq(idempotencyKeysTable.key, key))
+    .execute();
+
+  return result[0]; // return the first row or undefined
+  }
+
+export async function saveIdempotencyKey(key: string, jobId: string) {
+  return db.insert(idempotencyKeysTable).values({ key, jobId, status: "processing" }); 
+}
+
+export async function updateIdempotencyKeyStatus(key: string, status: "processing" | "completed" | "failed") {
+  return db
+    .update(idempotencyKeysTable)
+    .set({ status })
+    .where(eq(idempotencyKeysTable.key, key));
 }

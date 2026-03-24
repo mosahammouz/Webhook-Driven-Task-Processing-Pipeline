@@ -31,3 +31,11 @@ export const deliveryAttempts = pgTable("delivery_attempts",{
   status: varchar("status",{length: 20}).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  key: text("key").primaryKey(),
+  jobId: text("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  status: varchar("status", { length: 20 }).notNull().default("processing"), // processing | completed | failed
+  response: jsonb("response"), // optional: store job response
+  createdAt: timestamp("created_at").defaultNow(),
+});

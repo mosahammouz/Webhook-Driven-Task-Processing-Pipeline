@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config(); 
 import express, { type Request, type Response } from "express";
 import { pipeline,ActionType,Subscriber } from "./types";
-import { createPipeline ,getPipelineByPath , createJob, createSubscriber} from "./db/pipelines";
+import { createPipeline ,getPipelineByPath , createJob, createSubscriber,hasIdempotenctyKey ,saveIdempotencyKey} from "./db/pipelines";
 import { authMiddleware, verifyWebhookSignature } from "./auth.js";
 import { webhookLimiter } from "./webhookLimiter.js";
 import { getChannel, connectRabbitMQ } from "./rabbitmq";
@@ -43,6 +43,15 @@ async function handlerWebhook(req: Request, res: Response) {
       if(!signature){return res.status(401).json({err: "signature is missing !"});}
       const isSignValid = verifyWebhookSignature(req.rawBody!, signature );
       if(!isSignValid)return res.status(401).json({err: "Invalid signature"});
+      
+      const idempotencyKey = req.headers["x-idempotency-key"] as string;
+      if (!idempotencyKey) return res.status(400).json({ err: "Idempotency key required" });
+      
+      const existing = await hasIdempotenctyKey(idempotencyKey);
+      if (existing) {
+      // Optional: return stored response if already processed
+     return res.status(200).json({ message: "Webhook already processed", jobId: existing.jobId });
+      }
 
     const path = req.params.path as string;
     const data = req.body;
@@ -54,6 +63,7 @@ async function handlerWebhook(req: Request, res: Response) {
     id: Date.now().toString(),
     pipelineId: pipelineRow.id,
     payload: data,
+    idempotencyKey,
     status: "pending",
     attempts: 0,
     createdAt: new Date(),
@@ -63,7 +73,7 @@ async function handlerWebhook(req: Request, res: Response) {
   const savedJob = await createJob(newJob);
   if(!savedJob){return res.status(404).json({err : "savedjob not found"});}
 
-
+    await saveIdempotencyKey(idempotencyKey, savedJob.id);
    // Push job to RabbitMQ
   const channel = getChannel();
   channel.publish( // publish is a function 

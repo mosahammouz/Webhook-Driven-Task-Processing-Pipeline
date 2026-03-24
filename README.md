@@ -29,6 +29,7 @@ The system follows an event-driven architecture similar to automation platforms 
 ---- 
 
 - Reduced **API latency** by ~83% (from ~1200 ms to ~200 ms) by creatively using RabbitMQ
+- Handled the **Edge Case** of duplicate webhook requests using an **Idempotency Key**, ensuring each webhook is processed exactly once.
 
 ----
 

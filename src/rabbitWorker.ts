@@ -1,7 +1,7 @@
 import { getChannel, connectRabbitMQ } from "./rabbitmq";
 import { proccessJob } from "./processjob";
 import { deliverToSubscribers } from "./delivery";
-
+import { hasIdempotenctyKey , updateIdempotencyKeyStatus } from "./db/pipelines";
 async function startWorker() {
   const channel = await connectRabbitMQ();
 
@@ -10,25 +10,36 @@ async function startWorker() {
 
   console.log("RabbitMQ Worker started, waiting for jobs...");
 
-  channel.consume("jobs_queue", async (msg) => {
-    if (!msg) return;
+channel.consume("jobs_queue", async (msg) => {
+  if (!msg) return;
 
-    try {
-      const job = JSON.parse(msg.content.toString());
-      console.log("Processing job id:", job.id);
+  try {
+    const job = JSON.parse(msg.content.toString());
+    console.log("Processing job id:", job.id);
 
-      const updatedJob = await proccessJob(job);
-      await deliverToSubscribers(updatedJob!);
-
-      // Acknowledge to RabbitMQ that the job is done
+    // ===== Idempotency check =====
+    const existing = await hasIdempotenctyKey(job.idempotencyKey);
+    if (existing?.status === "completed") {
+      console.log("Job already processed, skipping:", job.id);
       channel.ack(msg);
-      console.log("Job completed:", job.id);
-    } catch (err) {
-      console.error("Error processing job:", err);
-      // optionally, reject and requeue
-      channel.nack(msg, false, true);
+      return;
     }
-  });
+
+    const updatedJob = await proccessJob(job);
+    await deliverToSubscribers(updatedJob!);
+
+    await updateIdempotencyKeyStatus(job.idempotencyKey, "completed");
+
+   
+
+    channel.ack(msg);
+    console.log("Job completed:", job.id);
+
+  } catch (err) {
+    console.error("Error processing job:", err);
+    channel.nack(msg, false, true); // requeue for retry
+  }
+});
 }
 
 startWorker().catch(console.error);
