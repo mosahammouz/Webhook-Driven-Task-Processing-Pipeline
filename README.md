@@ -22,7 +22,7 @@ The system follows an event-driven architecture similar to automation platforms 
 
 - **Architecture** : External Client → POST webhook/:path → AuthMiddleware → API Server (Express + Postgres) → RabbitMQ → Worker Service (Process Action) → Delivery Layer (Axios) → Subscriber Endpoints.
 
-- **Job lifecycle** : Received (API) → Queued (RabbitMQ) → Processing (Worker) → Completed (Delivered) OR Failed (Max Retries).
+- **Job lifecycle** : Received (API) → Queued (RabbitMQ) → Processing (Worker) → Completed (Delivered) OR Failed (Max Retries) OR Skipped(edge case: duplicate request with the same idempotency key).
 
 ----
 ## Creativity
