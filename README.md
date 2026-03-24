@@ -18,6 +18,13 @@ The system follows an event-driven architecture similar to automation platforms 
 - Workers can be **horizontally scaled** by adding new rabbitWorkers.
 - Used **Postman** to test API endpoints.
 ----
+## Architecture and job lifecycle
+
+- **Architecture** : External Client → POST webhook/:path → AuthMiddleware → API Server (Express + Postgres) → RabbitMQ → Worker Service (Process Action) → Delivery Layer (Axios) → Subscriber Endpoints.
+
+- **Job lifecycle** : Received (API) → Queued (RabbitMQ) → Processing (Worker) → Completed (Delivered) OR Failed (Max Retries).
+
+----
 ## Creativity
 ---- 
 
