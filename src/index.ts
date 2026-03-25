@@ -6,13 +6,12 @@ import { createPipeline ,getPipelineByPath , createJob, createSubscriber,hasIdem
 import { authMiddleware, verifyWebhookSignature } from "./auth.js";
 import { webhookLimiter } from "./webhookLimiter.js";
 import { getChannel, connectRabbitMQ } from "./rabbitmq";
-
 const app = express(); 
 const PORT = 3000;
 app.use(express.json({verify: (req: any, res, buf) => {req.rawBody = buf.toString();},}));
 await connectRabbitMQ();
 
-const validActions: ActionType[] = ["toUbberCase", "filterPrice", "addTimesTamp"];
+const validActions: ActionType[] = ["toUbberCase", "filterPrice", "addTimesTamp", "reverseString"];
 
 function handlerHello(req: Request, res: Response) {
   res.send("Hello World!");

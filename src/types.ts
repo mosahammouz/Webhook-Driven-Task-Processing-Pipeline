@@ -1,5 +1,5 @@
 
-export type ActionType = "toUbberCase" | "filterPrice" | "addTimesTamp";
+export type ActionType = "toUbberCase" | "filterPrice" | "addTimesTamp" | "reverseString";
 export type pipeline = {    // user will create this
     id: string,
     webhookPath: string, // url

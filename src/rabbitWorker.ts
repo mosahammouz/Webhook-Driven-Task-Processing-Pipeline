@@ -1,7 +1,8 @@
 import { getChannel, connectRabbitMQ } from "./rabbitmq";
-import { proccessJob } from "./processjob";
+import { processJob } from "./processjob";
 import { deliverToSubscribers } from "./delivery";
 import { hasIdempotenctyKey , updateIdempotencyKeyStatus } from "./db/pipelines";
+import "./processors/registerProcessors.js"
 async function startWorker() {
   const channel = await connectRabbitMQ();
 
@@ -25,7 +26,7 @@ channel.consume("jobs_queue", async (msg) => {
       return;
     }
 
-    const updatedJob = await proccessJob(job);
+    const updatedJob = await processJob(job);
     await deliverToSubscribers(updatedJob!);
 
     await updateIdempotencyKeyStatus(job.idempotencyKey, "completed");

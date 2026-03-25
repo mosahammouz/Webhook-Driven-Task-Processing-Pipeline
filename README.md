@@ -61,8 +61,8 @@ The system follows an event-driven architecture similar to automation platforms 
 - PostgreSQL for reliable storage of jobs, pipelines, subscribers, and idempotency keys.
 - Idempotency keys implemented to handle edge cases and prevent duplicate processing.
 - Worker processes separated from API for scalability and reliability.
+- Applied **SRP and Open/Closed principles** in processor design: each action type has its own class, and adding new processors requires no changes to existing job processing or worker code.
 - Dockerized services for easy deployment and consistent environments.
-
 ----
 ### The intricate details will be discussed in the demo
 --------------------------------------------------------------------------------------
