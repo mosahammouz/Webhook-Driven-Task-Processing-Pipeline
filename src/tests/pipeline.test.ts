@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as db from "../db/pipelines.js";
 import { processJob} from "../processjob.js";
 import type { job } from "../types.js";
-
+import "./../processors/registerProcessors.js";
 vi.mock("../db/pipelines.js"); 
 
 describe("proccessJob", () => {
