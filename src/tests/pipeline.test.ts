@@ -1,7 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as db from "../db/pipelines.js";
-import { proccessJob } from "../processjob.js";
+import { processJob} from "../processjob.js";
 import type { job } from "../types.js";
 
 vi.mock("../db/pipelines.js"); 
@@ -29,7 +29,7 @@ describe("proccessJob", () => {
     (db.updateJobPayload as any).mockResolvedValue(true);
     (db.markJobCompleted as any).mockResolvedValue(true);
 
-    const result = await proccessJob(jobTest);
+    const result = await processJob(jobTest);
 
     expect(result?.payload.text).toBe("HELLO");
     expect(db.updateJobPayload).toHaveBeenCalledWith(jobTest.id, { text: "HELLO" });
@@ -54,7 +54,7 @@ describe("proccessJob", () => {
     (db.updateJobPayload as any).mockResolvedValue(true);
     (db.markJobCompleted as any).mockResolvedValue(true);
 
-    const result = await proccessJob(jobTest);
+    const result = await processJob(jobTest);
 
     expect(result?.payload.SentAT).toBeDefined();
     expect(db.updateJobPayload).toHaveBeenCalledWith(jobTest.id, expect.objectContaining({ SentAT: expect.any(String) }));
@@ -77,7 +77,7 @@ describe("proccessJob", () => {
     });
     (db.markJobFailed as any).mockResolvedValue(true);
 
-    const result = await proccessJob(jobTest);
+    const result = await processJob(jobTest);
 
     expect(result).toBeUndefined();
     expect(db.markJobFailed).toHaveBeenCalledWith(jobTest.id);

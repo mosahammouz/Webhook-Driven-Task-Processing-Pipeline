@@ -2,7 +2,7 @@ import { getChannel, connectRabbitMQ } from "./rabbitmq";
 import { processJob } from "./processjob";
 import { deliverToSubscribers } from "./delivery";
 import { hasIdempotenctyKey , updateIdempotencyKeyStatus } from "./db/pipelines";
-import "./processors/registerProcessors.js"
+import "./processors/registerProcessors.js" // to run all ProcessorFactory.registerProcessor();
 async function startWorker() {
   const channel = await connectRabbitMQ();
 
